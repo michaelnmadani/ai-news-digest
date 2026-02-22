@@ -390,14 +390,16 @@ def _article_row(article: dict, index: int, show_hn_link: bool = False) -> str:
         f'<tr><td style="padding:12px 0;border-bottom:1px solid {_COLOR_BORDER};">'
         f'<table width="100%" cellpadding="0" cellspacing="0" border="0">'
         f'<tr>'
-        # Number column — fixed width, large bold black number, top-aligned
-        f'<td width="36" style="vertical-align:top;padding-top:2px;">'
+        # Number column — width% is responsive (shrinks on mobile), min-width keeps
+        # it readable on narrow screens. 8% of 640px ≈ 51px; floor is 36px on mobile.
+        f'<td width="8%" style="vertical-align:top;padding-top:2px;'
+        f'min-width:36px;max-width:60px;white-space:nowrap;">'
         f'<span style="font-size:30px;font-weight:900;color:#111111;'
         f'font-family:Georgia,\'Times New Roman\',serif;line-height:1;">'
         f'{index}</span>'
         f'</td>'
-        # Content column — title, optional HN link, description
-        f'<td style="vertical-align:top;padding-left:8px;">'
+        # Content column — takes all remaining space, shrinks naturally
+        f'<td style="vertical-align:top;padding-left:8px;width:92%;">'
         f'<a href="{link}" style="color:{_COLOR_ACCENT};font-weight:600;'
         f'font-size:15px;text-decoration:none;line-height:1.4;display:block;">'
         f'{title}</a>'
