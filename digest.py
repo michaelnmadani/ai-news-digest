@@ -368,42 +368,267 @@ _COLOR_BORDER = "#e4e6ea"
 _COLOR_MUTED  = "#666666"
 
 # ---------------------------------------------------------------------------
-# Old English numeral SVGs (15x15px inline, base64-encoded for email compat)
-# Each digit is drawn in an Old English / blackletter calligraphic style.
+# Old English / Blackletter numeral SVGs (rendered at 15x15px)
+#
+# Each SVG uses a high-resolution viewBox (0 0 40 50) scaled to 15x15px.
+# Style: thick black outline stroke, dark fill, white highlight accent,
+# and a drop-shadow filter — matching the ornate blackletter tattoo aesthetic.
+# Each numeral path is hand-crafted to mimic Old English serif calligraphy.
 # ---------------------------------------------------------------------------
+
+# Shared SVG defs block: drop-shadow filter + stroke style
+_SVG_DEFS = (
+    '<defs>'
+    '<filter id="ds" x="-20%" y="-20%" width="140%" height="140%">'
+    '<feDropShadow dx="0.8" dy="1.2" stdDeviation="0.6" flood-color="#000000" flood-opacity="0.7"/>'
+    '</filter>'
+    '</defs>'
+)
+
+# Each numeral is a dict with:
+#   'bg'     : background rect/shape fill color
+#   'paths'  : list of (d, fill, stroke, stroke_width) tuples — drawn bottom to top
+#   'highlight': optional highlight stroke path for inner white accent
+#
+# viewBox is "0 0 40 50". Scaled to width=15 height=15 in the final SVG.
+#
+# The paths below spell out blackletter-style numerals with:
+#   - Thick slab serifs at tops/bottoms
+#   - Diagonal stress (calligraphic thick/thin contrast)
+#   - Inner white highlight line along the thin edge
+#   - Deep black outer stroke
+
+_NUMERAL_PATHS: dict[int, list[tuple]] = {
+    # ── 1 ──────────────────────────────────────────────────────────────────
+    # Tall vertical stem with top-left serif flag and base slab serif
+    1: [
+        # Base slab serif
+        ("M6,43 L6,46 Q20,46 20,43 L18,43 L18,44.5 L8,44.5 L8,43 Z", "#111", "#000", 0.6),
+        # Main stem
+        ("M11,10 L13,10 L13,43 L11,43 Z", "#1a1a1a", "#000", 0.8),
+        # Top-left flag serif (diagonal)
+        ("M7,13 Q9,9 13,10 L11,10 Q9,11 8,14 Z", "#1a1a1a", "#000", 0.6),
+        # White highlight on left edge of stem
+        ("M11.6,12 L11.6,42", "#fff", "none", 0.5),
+        # Top slab cap
+        ("M9,9 L15,9 L15,11 L9,11 Z", "#111", "#000", 0.5),
+    ],
+    # ── 2 ──────────────────────────────────────────────────────────────────
+    # Curved top bowl, diagonal mid-stroke, base slab
+    2: [
+        # Base slab serif
+        ("M5,43 L5,46 L21,46 L21,43 Z", "#111", "#000", 0.6),
+        # Diagonal sweep stroke (mid to base)
+        ("M8,28 Q6,36 5,43 L8,43 Q9,36 12,28 Z", "#1a1a1a", "#000", 0.7),
+        # Horizontal mid-bar
+        ("M8,28 L20,28 L20,30 L8,30 Z", "#1a1a1a", "#000", 0.6),
+        # Top bowl (right curve)
+        ("M13,10 Q22,10 22,19 Q22,27 14,28 L12,28 Q20,26 20,19 Q20,12 13,12 Z", "#1a1a1a", "#000", 0.7),
+        # Top bowl (left inner)
+        ("M13,12 Q10,12 10,16 Q10,20 13,22 L15,22 Q12,20 12,16 Q12,13 13,12 Z", "#222", "#000", 0.5),
+        # White highlight on bowl top-right
+        ("M15,11 Q21,12 21,19", "#fff", "none", 0.5),
+    ],
+    # ── 3 ──────────────────────────────────────────────────────────────────
+    # Two right-side bowls stacked
+    3: [
+        # Bottom bowl outer
+        ("M13,28 Q23,28 23,37 Q23,46 13,46 L8,46 L8,43 Q13,43 13,43 Q20,43 20,37 Q20,30 13,30 Z", "#1a1a1a", "#000", 0.7),
+        # Bottom bowl inner cutout
+        ("M13,31 Q18,31 18,37 Q18,42 13,42 L11,42 Q15,41 15,37 Q15,32 13,31 Z", "#e8e0d0", "#000", 0.4),
+        # Mid bar
+        ("M8,27 L21,27 L21,29 L8,29 Z", "#1a1a1a", "#000", 0.6),
+        # Top bowl outer
+        ("M13,10 Q23,10 23,19 Q23,27 13,27 L8,27 L8,24 Q13,24 14,24 Q20,23 20,19 Q20,12 13,12 Z", "#1a1a1a", "#000", 0.7),
+        # Top bowl inner cutout
+        ("M13,13 Q18,13 18,19 Q18,23 14,24 L11,24 Q15,22 15,19 Q15,14 13,13 Z", "#e8e0d0", "#000", 0.4),
+        # Left vertical spine
+        ("M8,10 L10,10 L10,46 L8,46 Z", "#111", "#000", 0.5),
+        # White highlight top bowl
+        ("M15,11 Q22,13 22,19", "#fff", "none", 0.5),
+        # White highlight bottom bowl
+        ("M15,29 Q22,31 22,37", "#fff", "none", 0.5),
+    ],
+    # ── 4 ──────────────────────────────────────────────────────────────────
+    # Diagonal left arm, horizontal bar, vertical right stem
+    4: [
+        # Right vertical stem
+        ("M16,9 L18,9 L18,46 L16,46 Z", "#1a1a1a", "#000", 0.7),
+        # Base slab on right stem
+        ("M14,43 L14,46 L20,46 L20,43 Z", "#111", "#000", 0.5),
+        # Horizontal crossbar
+        ("M5,29 L18,29 L18,32 L5,32 Z", "#1a1a1a", "#000", 0.7),
+        # Left diagonal arm
+        ("M9,9 L11,9 L18,31 L16,31 Z", "#1a1a1a", "#000", 0.7),
+        # Top serif on left arm
+        ("M7,9 L13,9 L13,11 L7,11 Z", "#111", "#000", 0.5),
+        # White highlight on right stem
+        ("M16.6,10 L16.6,45", "#fff", "none", 0.5),
+        # White highlight on crossbar top
+        ("M6,29.5 L17,29.5", "#fff", "none", 0.4),
+    ],
+    # ── 5 ──────────────────────────────────────────────────────────────────
+    # Top horizontal bar, left stem, mid curl, bottom bowl
+    5: [
+        # Bottom bowl outer
+        ("M13,28 Q23,28 23,37 Q23,46 13,46 L7,46 L7,43 Q13,43 13,43 Q20,43 20,37 Q20,30 13,30 Z", "#1a1a1a", "#000", 0.7),
+        # Bottom bowl inner
+        ("M13,31 Q18,31 18,37 Q18,43 13,43 L10,43 Q15,42 15,37 Q15,32 13,31 Z", "#e8e0d0", "#000", 0.4),
+        # Left vertical stem (top half)
+        ("M7,10 L9,10 L9,29 L7,29 Z", "#1a1a1a", "#000", 0.7),
+        # Mid horizontal arm (connecting stem to bowl)
+        ("M7,27 L16,27 L16,30 L7,30 Z", "#1a1a1a", "#000", 0.6),
+        # Top horizontal bar
+        ("M7,10 L22,10 L22,13 L7,13 Z", "#1a1a1a", "#000", 0.7),
+        # Top-left serif cap
+        ("M5,9 L11,9 L11,11 L5,11 Z", "#111", "#000", 0.5),
+        # White highlight bottom bowl
+        ("M15,29 Q22,31 22,37", "#fff", "none", 0.5),
+        # White highlight top bar
+        ("M8,10.8 L21,10.8", "#fff", "none", 0.4),
+    ],
+    # ── 6 ──────────────────────────────────────────────────────────────────
+    # Curved top descending to closed bottom bowl
+    6: [
+        # Bottom closed bowl outer
+        ("M13,26 Q24,26 24,36 Q24,46 13,46 Q5,46 5,36 Q5,26 13,26 Z", "#1a1a1a", "#000", 0.8),
+        # Bottom closed bowl inner
+        ("M13,29 Q21,29 21,36 Q21,43 13,43 Q7,43 7,36 Q7,29 13,29 Z", "#e8e0d0", "#000", 0.5),
+        # Top descending curve (left spine)
+        ("M10,10 Q5,15 5,26 L7,26 Q7,16 11,11 Z", "#1a1a1a", "#000", 0.7),
+        # Top curl/flag
+        ("M10,10 Q16,7 20,12 L18,13 Q15,9 11,11 Z", "#1a1a1a", "#000", 0.6),
+        # White highlight bowl inner-top
+        ("M9,29 Q6,33 7,38", "#fff", "none", 0.5),
+        # White highlight top curl
+        ("M11,10 Q16,8 19,12", "#fff", "none", 0.5),
+    ],
+    # ── 7 ──────────────────────────────────────────────────────────────────
+    # Top horizontal bar with diagonal slash and notch
+    7: [
+        # Diagonal main stroke
+        ("M15,13 L9,46 L11,46 L17,13 Z", "#1a1a1a", "#000", 0.7),
+        # Base serif
+        ("M7,43 L7,46 L13,46 L13,43 Z", "#111", "#000", 0.5),
+        # Top horizontal bar
+        ("M6,10 L23,10 L23,13 L6,13 Z", "#1a1a1a", "#000", 0.8),
+        # Mid notch/crossbar (characteristic of blackletter 7)
+        ("M11,28 L17,28 L16,31 L10,31 Z", "#1a1a1a", "#000", 0.6),
+        # Left top serif
+        ("M5,9 L10,9 L10,11 L5,11 Z", "#111", "#000", 0.5),
+        # Right top serif
+        ("M19,9 L24,9 L24,11 L19,11 Z", "#111", "#000", 0.5),
+        # White highlight on top bar
+        ("M7,10.8 L22,10.8", "#fff", "none", 0.5),
+        # White highlight on diagonal
+        ("M15.5,14 L10,44", "#fff", "none", 0.4),
+    ],
+    # ── 8 ──────────────────────────────────────────────────────────────────
+    # Two stacked bowls (figure-8)
+    8: [
+        # Bottom bowl outer
+        ("M13,26 Q23,26 23,36 Q23,46 13,46 Q5,46 5,36 Q5,26 13,26 Z", "#1a1a1a", "#000", 0.8),
+        # Bottom bowl inner
+        ("M13,29 Q20,29 20,36 Q20,43 13,43 Q7,43 7,36 Q7,29 13,29 Z", "#e8e0d0", "#000", 0.5),
+        # Top bowl outer
+        ("M13,10 Q21,10 21,19 Q21,26 13,26 Q6,26 6,19 Q6,10 13,10 Z", "#1a1a1a", "#000", 0.8),
+        # Top bowl inner
+        ("M13,13 Q19,13 19,19 Q19,24 13,24 Q8,24 8,19 Q8,13 13,13 Z", "#e8e0d0", "#000", 0.5),
+        # White highlight top bowl
+        ("M9,12 Q7,15 7,20", "#fff", "none", 0.5),
+        # White highlight bottom bowl
+        ("M8,28 Q6,32 6,37", "#fff", "none", 0.5),
+    ],
+    # ── 9 ──────────────────────────────────────────────────────────────────
+    # Closed top bowl with descending right tail
+    9: [
+        # Descending tail (right side)
+        ("M17,24 Q22,30 20,46 L18,46 Q20,31 15,25 Z", "#1a1a1a", "#000", 0.7),
+        # Top closed bowl outer
+        ("M13,10 Q22,10 22,19 Q22,26 13,26 Q5,26 5,19 Q5,10 13,10 Z", "#1a1a1a", "#000", 0.8),
+        # Top closed bowl inner
+        ("M13,13 Q19,13 19,19 Q19,23 13,23 Q8,23 8,19 Q8,13 13,13 Z", "#e8e0d0", "#000", 0.5),
+        # White highlight bowl
+        ("M9,12 Q6,15 6,20", "#fff", "none", 0.5),
+        # White highlight tail
+        ("M17.5,25 Q22,32 19.5,45", "#fff", "none", 0.4),
+    ],
+    # ── 10 ─────────────────────────────────────────────────────────────────
+    # "1" on left + "0" on right, compact side-by-side in same viewBox
+    10: [
+        # --- Zero (right) ---
+        # Zero outer bowl
+        ("M26,10 Q36,10 36,28 Q36,46 26,46 Q18,46 18,28 Q18,10 26,10 Z", "#1a1a1a", "#000", 0.8),
+        # Zero inner bowl
+        ("M26,14 Q32,14 32,28 Q32,42 26,42 Q21,42 21,28 Q21,14 26,14 Z", "#e8e0d0", "#000", 0.5),
+        # Zero white highlight
+        ("M22,14 Q19,20 19,28", "#fff", "none", 0.5),
+        # --- One (left) ---
+        # Base slab serif for 1
+        ("M4,43 L4,46 L10,46 L10,43 Z", "#111", "#000", 0.5),
+        # Stem for 1
+        ("M5,10 L7,10 L7,43 L5,43 Z", "#1a1a1a", "#000", 0.7),
+        # Top flag serif for 1
+        ("M3,13 Q4,9 7,10 L5,10 Q4,11 3.5,14 Z", "#1a1a1a", "#000", 0.5),
+        # Top slab cap for 1
+        ("M3,9 L9,9 L9,11 L3,11 Z", "#111", "#000", 0.4),
+        # White highlight on 1 stem
+        ("M5.6,11 L5.6,42", "#fff", "none", 0.4),
+    ],
+}
+
 
 def _old_english_numeral_svg(n: int) -> str:
     """
-    Return an inline <img> tag containing a 15x15 Old English-style numeral SVG.
-    Numbers 1-10 supported; falls back to plain text for anything outside that range.
-    Numbers are rendered using an Old English / blackletter serif path style via
-    a Unicode blackletter character embedded in an SVG <text> element.
+    Return an inline SVG (15x15px) of a hand-crafted Old English blackletter numeral.
+    Style: thick black outline, dark fill, white highlight accent, drop shadow.
+    Supports 1-10; falls back to plain styled text for anything outside that range.
     """
-    # Unicode Mathematical Fraktur (blackletter) digits: 𝟎-𝟗 are not in fraktur,
-    # so we use the Unicode Old English / blackletter capital letters as a proxy,
-    # and embed the digit in a fraktur-inspired SVG font stack.
-    # For 10, we use a compact "𝕏" style split layout.
     if not (1 <= n <= 10):
-        return f'<span style="color:#aaaaaa;font-size:11px;font-weight:700;margin-right:4px;">{n}.</span>'
+        return (
+            f'<span style="color:#aaaaaa;font-size:11px;font-weight:700;'
+            f'margin-right:4px;">{n}.</span>'
+        )
 
-    digit_chars = {
-        1: "①", 2: "②", 3: "③", 4: "④", 5: "⑤",
-        6: "⑥", 7: "⑦", 8: "⑧", 9: "⑨", 10: "⑩",
-    }
+    paths = _NUMERAL_PATHS[n]
 
-    # SVG: 15x15px, Old English blackletter look via font-family stack + styling
-    char = digit_chars[n]
+    # Build path elements
+    path_els = ""
+    for (d, fill, stroke, sw) in paths:
+        stroke_attr = f'stroke="{stroke}" stroke-width="{sw}"' if stroke != "none" else 'stroke="none"'
+        path_els += f'<path d="{d}" fill="{fill}" {stroke_attr} stroke-linejoin="round" stroke-linecap="round" filter="url(#ds)"/>'
+
+    # Highlight paths have no filter (drawn on top, no shadow)
+    # They are already included in the paths list with fill="#fff" and stroke="none"
+    # — the filter="url(#ds)" on white looks odd, so we skip it for those.
+    # Re-draw highlights clean without filter:
+    highlight_els = ""
+    clean_paths = ""
+    for (d, fill, stroke, sw) in paths:
+        if fill == "#fff":
+            stroke_attr = f'stroke="{fill}" stroke-width="{sw}"' if stroke == "none" else f'stroke="{stroke}" stroke-width="{sw}"'
+            highlight_els += f'<path d="{d}" fill="none" stroke="#ffffff" stroke-width="{sw}" stroke-linecap="round" opacity="0.7"/>'
+
+    # Rebuild without highlights in main pass, then overlay highlights
+    path_els = ""
+    for (d, fill, stroke, sw) in paths:
+        if fill == "#fff":
+            continue  # handled separately
+        stroke_attr = f'stroke="{stroke}" stroke-width="{sw}"' if stroke != "none" else 'stroke="none"'
+        path_els += (
+            f'<path d="{d}" fill="{fill}" {stroke_attr} '
+            f'stroke-linejoin="round" stroke-linecap="round" filter="url(#ds)"/>'
+        )
+
+    vb = "0 0 40 50" if n != 10 else "0 0 40 50"
+
     svg = (
         f'<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" '
-        f'viewBox="0 0 15 15" style="display:inline-block;vertical-align:middle;margin-right:5px;">'
-        # Decorative circle background
-        f'<circle cx="7.5" cy="7.5" r="7" fill="#2c1810" stroke="#8b6914" stroke-width="0.8"/>'
-        # Old English numeral text — uses serif/blackletter Unicode enclosed numbers
-        f'<text x="7.5" y="11" '
-        f'font-family="\'Palatino Linotype\',\'Book Antiqua\',Palatino,\'Times New Roman\',serif" '
-        f'font-size="10" font-weight="bold" fill="#d4a843" '
-        f'text-anchor="middle" dominant-baseline="auto" '
-        f'letter-spacing="0">{char}</text>'
+        f'viewBox="{vb}" '
+        f'style="display:inline-block;vertical-align:middle;margin-right:6px;flex-shrink:0;">'
+        f'{_SVG_DEFS}'
+        f'{path_els}'
+        f'{highlight_els}'
         f'</svg>'
     )
     return svg
