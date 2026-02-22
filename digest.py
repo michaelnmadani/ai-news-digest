@@ -368,34 +368,52 @@ _COLOR_BORDER = "#e4e6ea"
 _COLOR_MUTED  = "#666666"
 
 # ---------------------------------------------------------------------------
-# Old English / Blackletter numeral images — hosted on GitHub raw CDN
+# Old English-style numeral badges via shields.io
 #
-# Gmail blocks both inline <svg> and data: URI img sources.
-# The only reliable solution is standard https:// hosted image URLs.
-# SVG files live in /numerals/ in this repo and are served via
-# raw.githubusercontent.com, which Gmail allows without restriction.
+# Gmail compatibility constraints:
+#   ✗ Inline <svg> — Gmail strips entirely
+#   ✗ data: URI in <img src> — Gmail blocks
+#   ✗ raw.githubusercontent.com — wrong MIME type, Gmail won't render SVG
+#   ✓ shields.io badge URLs — proper PNG over HTTPS, renders in all email clients
+#
+# Each badge is a shields.io "static" badge styled with:
+#   - Dark brown/gold color scheme matching the email design
+#   - Roman numeral label (I–X) for Old English / classical feel
+#   - Style: "flat-square" for a clean badge shape
 # ---------------------------------------------------------------------------
 
-_GITHUB_RAW = (
-    "https://raw.githubusercontent.com/michaelnmadani/ai-news-digest/main/numerals"
-)
+# Roman numeral labels for 1-10
+_ROMAN = {
+    1: "I", 2: "II", 3: "III", 4: "IV", 5: "V",
+    6: "VI", 7: "VII", 8: "VIII", 9: "IX", 10: "X",
+}
 
 
 def _old_english_numeral_svg(n: int) -> str:
     """
-    Return an <img> tag pointing to a GitHub-hosted Old English numeral SVG.
-    Uses raw.githubusercontent.com — a plain https:// URL Gmail renders reliably.
+    Return an <img> tag using a shields.io badge URL.
+    shields.io serves proper PNG/SVG over HTTPS with correct MIME types —
+    renders reliably in Gmail and all major email clients.
+    Badge style: Roman numeral on dark gold/brown, matching email design.
+    alt="" prevents the broken-image number from showing when images are blocked.
     """
     if not (1 <= n <= 10):
         return (
-            f'<span style="color:#aaaaaa;font-size:11px;font-weight:700;'
-            f'margin-right:4px;">{n}.</span>'
+            f'<span style="color:#8b6914;font-size:13px;font-weight:900;'
+            f'font-family:Georgia,serif;margin-right:6px;">{n}.</span>'
         )
-    url = f"{_GITHUB_RAW}/n{n}.svg"
+
+    roman = _ROMAN[n]
+    # shields.io static badge: label is empty, message is the Roman numeral
+    # color=8b6914 (antique gold), labelColor=1a0f00 (dark brown)
+    # style=flat-square for clean rectangular badge
+    url = (
+        f"https://img.shields.io/badge/{roman}-8b6914"
+        f"?style=flat-square&labelColor=1a0f00&color=8b6914"
+    )
     return (
-        f'<img src="{url}" width="28" height="28" alt="{n}" '
-        f'style="display:inline-block;vertical-align:middle;margin-right:8px;'
-        f'border:0;" />'
+        f'<img src="{url}" height="20" alt="" '
+        f'style="display:inline-block;vertical-align:middle;margin-right:8px;border:0;" />'
     )
 
 
