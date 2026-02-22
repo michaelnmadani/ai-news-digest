@@ -367,83 +367,45 @@ _COLOR_CARD   = "#ffffff"
 _COLOR_BORDER = "#e4e6ea"
 _COLOR_MUTED  = "#666666"
 
-# ---------------------------------------------------------------------------
-# Old English-style numeral badges via shields.io
-#
-# Gmail compatibility constraints:
-#   ✗ Inline <svg> — Gmail strips entirely
-#   ✗ data: URI in <img src> — Gmail blocks
-#   ✗ raw.githubusercontent.com — wrong MIME type, Gmail won't render SVG
-#   ✓ shields.io badge URLs — proper PNG over HTTPS, renders in all email clients
-#
-# Each badge is a shields.io "static" badge styled with:
-#   - Dark brown/gold color scheme matching the email design
-#   - Roman numeral label (I–X) for Old English / classical feel
-#   - Style: "flat-square" for a clean badge shape
-# ---------------------------------------------------------------------------
-
-# Roman numeral labels for 1-10
-_ROMAN = {
-    1: "I", 2: "II", 3: "III", 4: "IV", 5: "V",
-    6: "VI", 7: "VII", 8: "VIII", 9: "IX", 10: "X",
-}
-
-
-def _old_english_numeral_svg(n: int) -> str:
-    """
-    Return an <img> tag using a shields.io badge URL.
-    shields.io serves proper PNG/SVG over HTTPS with correct MIME types —
-    renders reliably in Gmail and all major email clients.
-    Badge style: Roman numeral on dark gold/brown, matching email design.
-    alt="" prevents the broken-image number from showing when images are blocked.
-    """
-    if not (1 <= n <= 10):
-        return (
-            f'<span style="color:#8b6914;font-size:13px;font-weight:900;'
-            f'font-family:Georgia,serif;margin-right:6px;">{n}.</span>'
-        )
-
-    roman = _ROMAN[n]
-    # shields.io static badge: label is empty, message is the Roman numeral
-    # color=8b6914 (antique gold), labelColor=1a0f00 (dark brown)
-    # style=flat-square for clean rectangular badge
-    url = (
-        f"https://img.shields.io/badge/{roman}-8b6914"
-        f"?style=flat-square&labelColor=1a0f00&color=8b6914"
-    )
-    return (
-        f'<img src="{url}" height="20" alt="" '
-        f'style="display:inline-block;vertical-align:middle;margin-right:8px;border:0;" />'
-    )
-
-
 def _article_row(article: dict, index: int, show_hn_link: bool = False) -> str:
-    title   = html.escape(article["title"])
-    link    = article["link"]
-    desc    = html.escape(article.get("description", ""))
-    numeral = _old_english_numeral_svg(index)
+    title = html.escape(article["title"])
+    link  = article["link"]
+    desc  = html.escape(article.get("description", ""))
 
     hn_link_html = ""
     if show_hn_link and article.get("hn_link") and article["hn_link"] != article["link"]:
         hn_link_html = (
-            f' &nbsp;<a href="{article["hn_link"]}" '
-            f'style="color:{_COLOR_MUTED};font-size:12px;text-decoration:none;">'
-            f'[HN thread]</a>'
+            f'<a href="{article["hn_link"]}" '
+            f'style="color:{_COLOR_MUTED};font-size:12px;text-decoration:none;'
+            f'display:block;margin-top:4px;">[HN thread]</a>'
         )
 
     desc_html = (
-        f'<br><span style="color:#555555;font-size:13px;line-height:1.5;'
-        f'display:block;margin-top:3px;margin-left:22px;">{desc}</span>'
+        f'<span style="color:#555555;font-size:13px;line-height:1.5;'
+        f'display:block;margin-top:4px;">{desc}</span>'
         if desc else ""
     )
 
     return (
-        f'<tr><td style="padding:12px 0;border-bottom:1px solid {_COLOR_BORDER};vertical-align:middle;">'
-        f'{numeral}'
+        f'<tr><td style="padding:12px 0;border-bottom:1px solid {_COLOR_BORDER};">'
+        f'<table width="100%" cellpadding="0" cellspacing="0" border="0">'
+        f'<tr>'
+        # Number column — fixed width, large bold black number, top-aligned
+        f'<td width="36" style="vertical-align:top;padding-top:2px;">'
+        f'<span style="font-size:30px;font-weight:900;color:#111111;'
+        f'font-family:Georgia,\'Times New Roman\',serif;line-height:1;">'
+        f'{index}</span>'
+        f'</td>'
+        # Content column — title, optional HN link, description
+        f'<td style="vertical-align:top;padding-left:8px;">'
         f'<a href="{link}" style="color:{_COLOR_ACCENT};font-weight:600;'
-        f'font-size:15px;text-decoration:none;line-height:1.4;">{title}</a>'
+        f'font-size:15px;text-decoration:none;line-height:1.4;display:block;">'
+        f'{title}</a>'
         f'{hn_link_html}'
         f'{desc_html}'
+        f'</td>'
+        f'</tr>'
+        f'</table>'
         f'</td></tr>'
     )
 
