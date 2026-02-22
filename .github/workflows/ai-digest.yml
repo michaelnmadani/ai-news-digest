@@ -1,0 +1,43 @@
+name: AI News Digest
+
+on:
+  schedule:
+    # 10:00 UTC = 5:00 AM EST (UTC-5) / 6:00 AM EDT (UTC-4)
+    - cron: "0 10 * * *"
+
+  # Allows manual trigger from the Actions tab for testing
+  workflow_dispatch:
+
+jobs:
+  send-digest:
+    name: Fetch and Email AI News Digest
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install --upgrade pip && pip install -r requirements.txt
+
+      - name: Run AI news digest
+        env:
+          GMAIL_USER:         ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: python digest.py
+
+      - name: Upload logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: digest-failure-log-${{ github.run_id }}
+          path: "*.log"
+          if-no-files-found: ignore
+          retention-days: 7
