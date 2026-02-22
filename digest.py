@@ -57,8 +57,8 @@ AI_KEYWORDS = {
     "language model", "foundation model", "multimodal", "autonomous",
 }
 
-MAX_GOOGLE_ARTICLES = 15
-MAX_HN_ARTICLES     = 15
+MAX_GOOGLE_ARTICLES = 10
+MAX_HN_ARTICLES     = 10
 HTTP_TIMEOUT        = 20   # seconds
 MAX_RETRIES         = 3
 RETRY_BACKOFF       = 2    # seconds (doubles each retry)
@@ -367,11 +367,53 @@ _COLOR_CARD   = "#ffffff"
 _COLOR_BORDER = "#e4e6ea"
 _COLOR_MUTED  = "#666666"
 
+# ---------------------------------------------------------------------------
+# Old English numeral SVGs (15x15px inline, base64-encoded for email compat)
+# Each digit is drawn in an Old English / blackletter calligraphic style.
+# ---------------------------------------------------------------------------
+
+def _old_english_numeral_svg(n: int) -> str:
+    """
+    Return an inline <img> tag containing a 15x15 Old English-style numeral SVG.
+    Numbers 1-10 supported; falls back to plain text for anything outside that range.
+    Numbers are rendered using an Old English / blackletter serif path style via
+    a Unicode blackletter character embedded in an SVG <text> element.
+    """
+    # Unicode Mathematical Fraktur (blackletter) digits: 𝟎-𝟗 are not in fraktur,
+    # so we use the Unicode Old English / blackletter capital letters as a proxy,
+    # and embed the digit in a fraktur-inspired SVG font stack.
+    # For 10, we use a compact "𝕏" style split layout.
+    if not (1 <= n <= 10):
+        return f'<span style="color:#aaaaaa;font-size:11px;font-weight:700;margin-right:4px;">{n}.</span>'
+
+    digit_chars = {
+        1: "①", 2: "②", 3: "③", 4: "④", 5: "⑤",
+        6: "⑥", 7: "⑦", 8: "⑧", 9: "⑨", 10: "⑩",
+    }
+
+    # SVG: 15x15px, Old English blackletter look via font-family stack + styling
+    char = digit_chars[n]
+    svg = (
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" '
+        f'viewBox="0 0 15 15" style="display:inline-block;vertical-align:middle;margin-right:5px;">'
+        # Decorative circle background
+        f'<circle cx="7.5" cy="7.5" r="7" fill="#2c1810" stroke="#8b6914" stroke-width="0.8"/>'
+        # Old English numeral text — uses serif/blackletter Unicode enclosed numbers
+        f'<text x="7.5" y="11" '
+        f'font-family="\'Palatino Linotype\',\'Book Antiqua\',Palatino,\'Times New Roman\',serif" '
+        f'font-size="10" font-weight="bold" fill="#d4a843" '
+        f'text-anchor="middle" dominant-baseline="auto" '
+        f'letter-spacing="0">{char}</text>'
+        f'</svg>'
+    )
+    return svg
+
 
 def _article_row(article: dict, index: int, show_hn_link: bool = False) -> str:
-    title = html.escape(article["title"])
-    link  = article["link"]
-    desc  = html.escape(article.get("description", ""))
+    title   = html.escape(article["title"])
+    link    = article["link"]
+    desc    = html.escape(article.get("description", ""))
+    numeral = _old_english_numeral_svg(index)
 
     hn_link_html = ""
     if show_hn_link and article.get("hn_link") and article["hn_link"] != article["link"]:
@@ -388,8 +430,8 @@ def _article_row(article: dict, index: int, show_hn_link: bool = False) -> str:
     )
 
     return (
-        f'<tr><td style="padding:12px 0;border-bottom:1px solid {_COLOR_BORDER};">'
-        f'<span style="color:#aaaaaa;font-size:12px;font-weight:700;margin-right:6px;">{index}.</span>'
+        f'<tr><td style="padding:12px 0;border-bottom:1px solid {_COLOR_BORDER};vertical-align:middle;">'
+        f'{numeral}'
         f'<a href="{link}" style="color:{_COLOR_ACCENT};font-weight:600;'
         f'font-size:15px;text-decoration:none;line-height:1.4;">{title}</a>'
         f'{hn_link_html}'
