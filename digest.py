@@ -14,7 +14,6 @@ Optional flags:
 """
 
 import argparse
-import base64
 import html
 import logging
 import os
@@ -369,90 +368,34 @@ _COLOR_BORDER = "#e4e6ea"
 _COLOR_MUTED  = "#666666"
 
 # ---------------------------------------------------------------------------
-# Old English / Blackletter numeral images (20x20px, base64 data URI SVGs)
+# Old English / Blackletter numeral images — hosted on GitHub raw CDN
 #
-# Gmail strips inline <svg> tags entirely, so we embed each numeral as an
-# <img src="data:image/svg+xml;base64,..."> — Gmail allows data URIs in img src.
-# Each SVG is built as a string then base64-encoded at runtime.
-# Style: gold-ringed dark badge with Old English blackletter serif digit.
+# Gmail blocks both inline <svg> and data: URI img sources.
+# The only reliable solution is standard https:// hosted image URLs.
+# SVG files live in /numerals/ in this repo and are served via
+# raw.githubusercontent.com, which Gmail allows without restriction.
 # ---------------------------------------------------------------------------
 
-def _build_numeral_svg(n: int) -> str:
-    """
-    Build a raw SVG string for a given numeral (1-10).
-    Uses large viewBox (0 0 100 100) for crisp rendering, scaled to 20x20px display.
-    Style: dark parchment circle badge with Old English blackletter digit in gold/cream.
-    The SVG is then base64-encoded and embedded as a data URI in an <img> tag,
-    which Gmail fully supports (unlike inline <svg> which Gmail strips).
-    """
-    # Blackletter / Old English Unicode numerals from the Mathematical Fraktur block.
-    # These render in a genuine blackletter style on all major platforms.
-    fraktur = {
-        1: "𝟏", 2: "𝟐", 3: "𝟑", 4: "𝟒", 5: "𝟓",
-        6: "𝟔", 7: "𝟕", 8: "𝟖", 9: "𝟗", 10: "𝟏𝟎",
-    }
-    # Fallback plain digit for "10" which needs two characters
-    label = fraktur.get(n, str(n))
-    font_size = "52" if n < 10 else "38"
-    x_pos = "50" if n < 10 else "50"
-
-    svg = f'''<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 100 100">
-  <defs>
-    <radialGradient id="bg" cx="40%" cy="35%" r="60%">
-      <stop offset="0%" stop-color="#3a2a0a"/>
-      <stop offset="100%" stop-color="#1a0f00"/>
-    </radialGradient>
-    <filter id="shadow">
-      <feDropShadow dx="1.5" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.6"/>
-    </filter>
-    <filter id="txtshadow">
-      <feDropShadow dx="1" dy="1.5" stdDeviation="1" flood-color="#000" flood-opacity="0.8"/>
-    </filter>
-  </defs>
-  <!-- Outer ring -->
-  <circle cx="50" cy="50" r="48" fill="#8b6914" filter="url(#shadow)"/>
-  <!-- Inner ring -->
-  <circle cx="50" cy="50" r="44" fill="#c8961e"/>
-  <!-- Main badge face -->
-  <circle cx="50" cy="50" r="40" fill="url(#bg)"/>
-  <!-- Inner decorative ring -->
-  <circle cx="50" cy="50" r="36" fill="none" stroke="#8b6914" stroke-width="1.5" opacity="0.8"/>
-  <!-- Numeral -->
-  <text
-    x="{x_pos}" y="65"
-    font-family="'Palatino Linotype','Book Antiqua',Palatino,'Times New Roman',Georgia,serif"
-    font-size="{font_size}"
-    font-weight="900"
-    font-style="italic"
-    fill="#f0d080"
-    text-anchor="middle"
-    filter="url(#txtshadow)"
-    letter-spacing="-2"
-  >{label}</text>
-  <!-- Highlight glint top-left -->
-  <ellipse cx="35" cy="32" rx="10" ry="6" fill="white" opacity="0.08" transform="rotate(-30 35 32)"/>
-</svg>'''
-    return svg
+_GITHUB_RAW = (
+    "https://raw.githubusercontent.com/michaelnmadani/ai-news-digest/main/numerals"
+)
 
 
 def _old_english_numeral_svg(n: int) -> str:
     """
-    Return an <img> tag with a base64-encoded SVG data URI.
-    Gmail fully supports <img src="data:image/svg+xml;base64,..."> tags
-    but strips all inline <svg> elements — this approach works reliably.
+    Return an <img> tag pointing to a GitHub-hosted Old English numeral SVG.
+    Uses raw.githubusercontent.com — a plain https:// URL Gmail renders reliably.
     """
     if not (1 <= n <= 10):
         return (
             f'<span style="color:#aaaaaa;font-size:11px;font-weight:700;'
             f'margin-right:4px;">{n}.</span>'
         )
-    raw_svg   = _build_numeral_svg(n)
-    b64       = base64.b64encode(raw_svg.encode("utf-8")).decode("ascii")
-    data_uri  = f"data:image/svg+xml;base64,{b64}"
+    url = f"{_GITHUB_RAW}/n{n}.svg"
     return (
-        f'<img src="{data_uri}" width="20" height="20" alt="{n}" '
-        f'style="display:inline-block;vertical-align:middle;margin-right:7px;'
-        f'border:0;flex-shrink:0;" />'
+        f'<img src="{url}" width="28" height="28" alt="{n}" '
+        f'style="display:inline-block;vertical-align:middle;margin-right:8px;'
+        f'border:0;" />'
     )
 
 
