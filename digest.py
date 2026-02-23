@@ -67,17 +67,17 @@ RETRY_BACKOFF       = 2    # seconds (doubles each retry)
 # Date helpers
 # ---------------------------------------------------------------------------
 
-def get_yesterday_eastern() -> tuple[datetime, datetime]:
+def get_yesterday_sydney() -> tuple[datetime, datetime]:
     """
     Return (start_of_yesterday_utc, end_of_yesterday_utc) where 'yesterday'
-    is defined in US Eastern time — correctly handles EST/EDT transitions.
+    is defined in Sydney time — correctly handles AEST/AEDT transitions.
     """
-    eastern = ZoneInfo("America/New_York")
-    now_et  = datetime.now(tz=eastern)
-    yest_et = now_et - timedelta(days=1)
+    sydney  = ZoneInfo("Australia/Sydney")
+    now_syd = datetime.now(tz=sydney)
+    yest    = now_syd - timedelta(days=1)
 
-    start = yest_et.replace(hour=0,  minute=0,  second=0,  microsecond=0)
-    end   = yest_et.replace(hour=23, minute=59, second=59, microsecond=999999)
+    start = yest.replace(hour=0,  minute=0,  second=0,  microsecond=0)
+    end   = yest.replace(hour=23, minute=59, second=59, microsecond=999999)
 
     return start.astimezone(timezone.utc), end.astimezone(timezone.utc)
 
@@ -352,7 +352,7 @@ def build_plain_text(google_articles: list[dict], hn_articles: list[dict], date_
         lines.append("")
 
     lines.append("")
-    lines.append("Automated daily digest · Delivered at 5am ET")
+    lines.append("Automated daily digest · Delivered at 5am Sydney time")
 
     return "\n".join(lines)
 
@@ -513,7 +513,7 @@ def build_html_email(
       <tr>
         <td style="padding:20px 32px;text-align:center;">
           <p style="margin:0;color:#aaaaaa;font-size:12px;line-height:1.6;">
-            Automated daily digest &middot; Delivered at 5&nbsp;am&nbsp;ET<br>
+            Automated daily digest &middot; Delivered at 5&nbsp;am&nbsp;Sydney&nbsp;time<br>
             Powered by Google News RSS &amp; Hacker News API
           </p>
         </td>
@@ -589,7 +589,7 @@ def main() -> None:
             )
             sys.exit(1)
 
-    start_utc, end_utc = get_yesterday_eastern()
+    start_utc, end_utc = get_yesterday_sydney()
     logging.info("Date window: %s  →  %s", start_utc, end_utc)
 
     # Fetch both sources independently
@@ -600,8 +600,8 @@ def main() -> None:
     google_articles, hn_articles = deduplicate(google_articles, hn_articles)
 
     total    = len(google_articles) + len(hn_articles)
-    date_str = datetime.now(ZoneInfo("America/New_York")).strftime("%A, %B %-d, %Y")
-    subject  = f"AI News Digest \u2014 {datetime.now(ZoneInfo('America/New_York')).strftime('%b %-d')} ({total} {'story' if total == 1 else 'stories'})"
+    date_str = datetime.now(ZoneInfo("Australia/Sydney")).strftime("%A, %B %-d, %Y")
+    subject  = f"AI News Digest \u2014 {datetime.now(ZoneInfo('Australia/Sydney')).strftime('%b %-d')} ({total} {'story' if total == 1 else 'stories'})"
 
     logging.info("Total unique articles: %d", total)
 

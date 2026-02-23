@@ -2,8 +2,10 @@ name: AI News Digest
 
 on:
   schedule:
-    # 10:00 UTC = 5:00 AM EST (UTC-5) / 6:00 AM EDT (UTC-4)
-    - cron: "0 10 * * *"
+    # 19:00 UTC = 5:00 AM AEDT (UTC+11, Oct-Apr) / 6:00 AM AEST (UTC+10, Apr-Oct)
+    # Using AEDT offset so email arrives at 5am during daylight saving time.
+    # During AEST (winter) it will arrive at 6am — a 1hr drift due to DST.
+    - cron: "0 19 * * *"
 
   # Allows manual trigger from the Actions tab for testing
   workflow_dispatch:
