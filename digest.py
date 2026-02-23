@@ -381,7 +381,7 @@ def _article_row(article: dict, index: int, show_hn_link: bool = False) -> str:
         )
 
     desc_html = (
-        f'<span style="color:#555555;font-size:13px;line-height:1.5;'
+        f'<span style="color:#555555;font-size:10px;line-height:1.5;'
         f'display:block;margin-top:4px;">{desc}</span>'
         if desc else ""
     )
@@ -401,7 +401,7 @@ def _article_row(article: dict, index: int, show_hn_link: bool = False) -> str:
         # Content column — takes all remaining space, shrinks naturally
         f'<td style="vertical-align:top;padding-left:8px;width:92%;">'
         f'<a href="{link}" style="color:{_COLOR_ACCENT};font-weight:600;'
-        f'font-size:15px;text-decoration:none;line-height:1.4;display:block;">'
+        f'font-size:13px;text-decoration:none;line-height:1.4;display:block;">'
         f'{title}</a>'
         f'{hn_link_html}'
         f'{desc_html}'
