@@ -344,8 +344,6 @@ def build_plain_text(google_articles: list[dict], hn_articles: list[dict], date_
             lines.append(f"{i}. {a['title']}")
             lines.append(f"   {a['link']}")
             lines.append(f"   {a['description']}")
-            if a.get("hn_link") and a["hn_link"] != a["link"]:
-                lines.append(f"   HN thread: {a['hn_link']}")
             lines.append("")
     else:
         lines.append("No Hacker News AI stories found for yesterday.")
@@ -373,12 +371,6 @@ def _article_row(article: dict, index: int, show_hn_link: bool = False) -> str:
     desc  = html.escape(article.get("description", ""))
 
     hn_link_html = ""
-    if show_hn_link and article.get("hn_link") and article["hn_link"] != article["link"]:
-        hn_link_html = (
-            f'<a href="{article["hn_link"]}" '
-            f'style="color:{_COLOR_MUTED};font-size:12px;text-decoration:none;'
-            f'display:block;margin-top:4px;">[HN thread]</a>'
-        )
 
     desc_html = (
         f'<span style="color:#555555;font-size:10px;line-height:1.5;'
