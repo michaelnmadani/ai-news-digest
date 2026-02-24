@@ -518,6 +518,300 @@ def build_html_email(
 </html>"""
 
 # ---------------------------------------------------------------------------
+# Webpage builder
+# ---------------------------------------------------------------------------
+
+def build_webpage(
+    google_articles: list[dict],
+    hn_articles: list[dict],
+    date_str: str,
+) -> str:
+    """
+    Build a full HTML webpage matching the email digest design.
+    Unlike the email (inline CSS only), the webpage can use a proper
+    <style> block, Google Fonts, CSS variables, and media queries.
+    """
+    updated_at = datetime.now(ZoneInfo("Australia/Sydney")).strftime(
+        "%A, %-d %B %Y · %-I:%M %p Sydney time"
+    )
+    g_count = len(google_articles)
+    h_count = len(hn_articles)
+
+    def article_card(article: dict, index: int) -> str:
+        title = html.escape(article["title"])
+        link  = article["link"]
+        desc  = html.escape(article.get("description", ""))
+        desc_html = (
+            f'<p class="desc">{desc}</p>' if desc else ""
+        )
+        return (
+            f'<div class="article">'
+            f'<div class="num">{index}</div>'
+            f'<div class="content">'
+            f'<a href="{link}" target="_blank" rel="noopener noreferrer" class="title">{title}</a>'
+            f'{desc_html}'
+            f'</div>'
+            f'</div>'
+        )
+
+    google_cards = (
+        "".join(article_card(a, i + 1) for i, a in enumerate(google_articles))
+        if google_articles
+        else '<p class="empty">No Google News AI articles found for yesterday.</p>'
+    )
+    hn_cards = (
+        "".join(article_card(a, i + 1) for i, a in enumerate(hn_articles))
+        if hn_articles
+        else '<p class="empty">No Hacker News AI stories found for yesterday.</p>'
+    )
+
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI News Digest &mdash; {date_str}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
+
+    :root {{
+      --color-bg:      #f0f2f5;
+      --color-header:  #1a1a2e;
+      --color-card:    #ffffff;
+      --color-accent:  #0066cc;
+      --color-border:  #e4e6ea;
+      --color-muted:   #666666;
+      --color-num:     #111111;
+      --color-desc:    #555555;
+      --color-google:  #cc2200;
+      --color-hn:      #ff6600;
+      --color-gold:    #c8961e;
+    }}
+
+    body {{
+      background: var(--color-bg);
+      font-family: 'Inter', system-ui, sans-serif;
+      color: #222;
+      min-height: 100vh;
+    }}
+
+    /* ── Header ── */
+    header {{
+      background: var(--color-header);
+      padding: 28px 24px 22px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+    }}
+    .header-inner {{
+      max-width: 800px;
+      margin: 0 auto;
+    }}
+    .header-label {{
+      font-size: 11px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: #7090c8;
+      font-family: 'Inter', sans-serif;
+      margin-bottom: 6px;
+    }}
+    header h1 {{
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 32px;
+      font-weight: 900;
+      color: #ffffff;
+      letter-spacing: -0.5px;
+      line-height: 1.1;
+    }}
+    header .date {{
+      margin-top: 6px;
+      color: #8aa4cc;
+      font-size: 14px;
+    }}
+
+    /* ── Summary bar ── */
+    .summary-bar {{
+      background: #0d2d52;
+      padding: 9px 24px;
+    }}
+    .summary-bar p {{
+      max-width: 800px;
+      margin: 0 auto;
+      color: #7aaee8;
+      font-size: 13px;
+    }}
+
+    /* ── Main content ── */
+    main {{
+      max-width: 800px;
+      margin: 28px auto;
+      padding: 0 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }}
+
+    /* ── Section card ── */
+    .section {{
+      background: var(--color-card);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }}
+    .section-header {{
+      padding: 18px 24px 14px;
+      border-bottom: 2px solid var(--color-border);
+    }}
+    .section-header h2 {{
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--color-header);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }}
+    .section-header h2::before {{
+      content: '';
+      display: inline-block;
+      width: 4px;
+      height: 20px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }}
+    .section--google .section-header h2::before {{ background: var(--color-google); }}
+    .section--hn     .section-header h2::before {{ background: var(--color-hn); }}
+
+    /* ── Article row ── */
+    .article {{
+      display: flex;
+      align-items: flex-start;
+      gap: 0;
+      padding: 14px 24px;
+      border-bottom: 1px solid var(--color-border);
+    }}
+    .article:last-child {{ border-bottom: none; }}
+
+    .num {{
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 28px;
+      font-weight: 900;
+      color: var(--color-num);
+      line-height: 1;
+      min-width: 5%;
+      max-width: 52px;
+      padding-top: 1px;
+      flex-shrink: 0;
+    }}
+
+    .content {{
+      flex: 1;
+      min-width: 0;
+      padding-left: 10px;
+    }}
+
+    a.title {{
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--color-accent);
+      text-decoration: none;
+      line-height: 1.4;
+    }}
+    a.title:hover {{ text-decoration: underline; }}
+
+    .desc {{
+      margin-top: 5px;
+      font-size: 12px;
+      color: var(--color-desc);
+      line-height: 1.5;
+    }}
+
+    .empty {{
+      padding: 16px 24px;
+      color: var(--color-muted);
+      font-style: italic;
+      font-size: 14px;
+    }}
+
+    /* ── Footer ── */
+    footer {{
+      text-align: center;
+      padding: 24px 16px 40px;
+      color: #999;
+      font-size: 12px;
+      line-height: 1.7;
+    }}
+    footer a {{ color: #999; }}
+
+    /* ── Responsive ── */
+    @media (max-width: 480px) {{
+      header h1    {{ font-size: 24px; }}
+      .num         {{ font-size: 22px; min-width: 32px; }}
+      a.title      {{ font-size: 13px; }}
+      .article     {{ padding: 12px 16px; }}
+      .section-header {{ padding: 14px 16px 12px; }}
+    }}
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-inner">
+      <p class="header-label">Daily Briefing</p>
+      <h1>AI News Digest</h1>
+      <p class="date">{date_str}</p>
+    </div>
+  </header>
+
+  <div class="summary-bar">
+    <p>
+      {g_count} headline{'s' if g_count != 1 else ''} from Google News
+      &nbsp;&middot;&nbsp;
+      {h_count} stor{'ies' if h_count != 1 else 'y'} from Hacker News
+    </p>
+  </div>
+
+  <main>
+
+    <section class="section section--google">
+      <div class="section-header">
+        <h2>Google News &mdash; AI Headlines</h2>
+      </div>
+      {google_cards}
+    </section>
+
+    <section class="section section--hn">
+      <div class="section-header">
+        <h2>Hacker News &mdash; Top AI Stories</h2>
+      </div>
+      {hn_cards}
+    </section>
+
+  </main>
+
+  <footer>
+    Last updated: {updated_at}<br>
+    Powered by Google News RSS &amp; Hacker News API
+  </footer>
+
+</body>
+</html>"""
+
+
+def save_webpage(html: str, path: str = "public/index.html") -> None:
+    """Write the webpage HTML to disk, creating the directory if needed."""
+    import os
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(html)
+    logging.info("Webpage written to %s", path)
+
+
+# ---------------------------------------------------------------------------
 # Email sender
 # ---------------------------------------------------------------------------
 
@@ -600,6 +894,10 @@ def main() -> None:
     html_body  = build_html_email(google_articles, hn_articles, date_str)
     plain_body = build_plain_text(google_articles, hn_articles, date_str)
 
+    # Always generate and save the webpage (email and webpage are independent)
+    webpage = build_webpage(google_articles, hn_articles, date_str)
+    save_webpage(webpage)
+
     if args.dry_run:
         print("\n" + "=" * 60)
         print(f"DRY RUN — Subject: {subject}")
@@ -607,6 +905,7 @@ def main() -> None:
         print(plain_body)
         print("=" * 60)
         print("(HTML email not sent — dry-run mode)")
+        print(f"(Webpage written to public/index.html)")
         return
 
     success = send_email(subject, html_body, plain_body)

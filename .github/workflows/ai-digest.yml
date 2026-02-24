@@ -35,6 +35,14 @@ jobs:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
         run: python digest.py
 
+      - name: Commit updated webpage
+        run: |
+          git config user.name "AI Digest Bot"
+          git config user.email "actions@github.com"
+          git add public/index.html
+          git diff --staged --quiet || git commit -m "chore: update digest webpage [$(date -u '+%Y-%m-%d')]"
+          git push
+
       - name: Upload logs on failure
         if: failure()
         uses: actions/upload-artifact@v4
