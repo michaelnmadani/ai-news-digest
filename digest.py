@@ -365,12 +365,10 @@ _COLOR_CARD   = "#ffffff"
 _COLOR_BORDER = "#e4e6ea"
 _COLOR_MUTED  = "#666666"
 
-def _article_row(article: dict, index: int, show_hn_link: bool = False) -> str:
+def _article_row(article: dict, index: int) -> str:
     title = html.escape(article["title"])
-    link  = article["link"]
+    link  = html.escape(article["link"], quote=True)
     desc  = html.escape(article.get("description", ""))
-
-    hn_link_html = ""
 
     desc_html = (
         f'<span style="color:#555555;font-size:10px;line-height:1.5;'
@@ -395,7 +393,6 @@ def _article_row(article: dict, index: int, show_hn_link: bool = False) -> str:
         f'<a href="{link}" style="color:{_COLOR_ACCENT};font-weight:600;'
         f'font-size:13px;text-decoration:none;line-height:1.4;display:block;">'
         f'{title}</a>'
-        f'{hn_link_html}'
         f'{desc_html}'
         f'</td>'
         f'</tr>'
@@ -419,7 +416,7 @@ def build_html_email(
     )
 
     hn_rows = (
-        "".join(_article_row(a, i + 1, show_hn_link=True) for i, a in enumerate(hn_articles))
+        "".join(_article_row(a, i + 1) for i, a in enumerate(hn_articles))
         if hn_articles
         else (
             f'<tr><td style="color:{_COLOR_MUTED};padding:14px 0;font-style:italic;">'
@@ -539,7 +536,7 @@ def build_webpage(
 
     def article_card(article: dict, index: int) -> str:
         title = html.escape(article["title"])
-        link  = article["link"]
+        link  = html.escape(article["link"], quote=True)
         desc  = html.escape(article.get("description", ""))
         desc_html = (
             f'<p class="desc">{desc}</p>' if desc else ""
@@ -802,12 +799,11 @@ def build_webpage(
 </html>"""
 
 
-def save_webpage(html: str, path: str = "public/index.html") -> None:
+def save_webpage(content: str, path: str = "public/index.html") -> None:
     """Write the webpage HTML to disk, creating the directory if needed."""
-    import os
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
-        f.write(html)
+        f.write(content)
     logging.info("Webpage written to %s", path)
 
 
@@ -886,8 +882,9 @@ def main() -> None:
     google_articles, hn_articles = deduplicate(google_articles, hn_articles)
 
     total    = len(google_articles) + len(hn_articles)
-    date_str = datetime.now(ZoneInfo("Australia/Sydney")).strftime("%A, %B %-d, %Y")
-    subject  = f"AI News Digest \u2014 {datetime.now(ZoneInfo('Australia/Sydney')).strftime('%b %-d')} ({total} {'story' if total == 1 else 'stories'})"
+    now_sydney = datetime.now(ZoneInfo("Australia/Sydney"))
+    date_str   = now_sydney.strftime("%A, %B %-d, %Y")
+    subject    = f"AI News Digest \u2014 {now_sydney.strftime('%b %-d')} ({total} {'story' if total == 1 else 'stories'})"
 
     logging.info("Total unique articles: %d", total)
 
